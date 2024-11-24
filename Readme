@@ -1,0 +1,9 @@
+### How To Run:
+- on different terminals input the following commands:  
+python -m server.server.py --port 5001 --replicas 127.0.0.1:5000  
+python -m server.server.py --port 5002 --replicas 127.0.0.1:5000  
+python -m server.server.py --port 5000 --replicas 127.0.0.1:5001 127.0.0.1:500  
+- once above are done in another terminal:
+python -m client/client.py 
+
+Ensure that you are in the main directory when running above commands
