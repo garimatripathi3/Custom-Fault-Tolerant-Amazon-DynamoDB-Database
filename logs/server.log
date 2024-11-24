@@ -1,0 +1,4 @@
+2024-11-24 23:21:54,286 - INFO - Connection established with ('127.0.0.1', 57168)
+2024-11-24 23:21:54,287 - INFO - Raw received data: GET key1
+2024-11-24 23:21:54,287 - INFO - Received data: GET key1 from ('127.0.0.1', 57168)
+2024-11-24 23:21:54,287 - INFO - Raw received data: 
