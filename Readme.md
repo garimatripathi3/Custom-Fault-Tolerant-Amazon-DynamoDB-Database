@@ -3,7 +3,9 @@
 # Amazon DynamoDB with Fault Tolerance  
 Course Project - Distributed Systems
 
-This project implements a distributed key-value store system based on the principles of Amazon DynamoDB with fault tolerance features. The system ensures data availability, resilience to failures, and performance benchmarking, providing functionalities such as replication, transaction handling, and dynamic node management.
+This project implements a distributed key-value store system based on the principles of Amazon DynamoDB with fault tolerance features.
+ The system ensures data availability, resilience to failures, and performance benchmarking, providing functionalities such as replication,
+ transaction handling, and dynamic node management.
 
 ### Key Features
 - Client-Server Architecture: Multiple servers host the database, and clients interact with these servers to perform operations like PUT and GET.
