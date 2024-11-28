@@ -7,3 +7,13 @@ python -m server.server.py --port 5000 --replicas 127.0.0.1:5001 127.0.0.1:500
 python -m client/client.py 
 
 Ensure that you are in the main directory when running above commands
+Functionalities : 
+Handling of asynchronous and non blocking calls
+Persistent Storage
+Consistent Hashing 
+Write ahead log
+Log for server
+Additional periodic backup  (Taking periodic snapshot of the system)
+Transaction property 
+Replica creation and handling 
+Handling situation when one replica is down and client is connecting to that replica server 
