@@ -1,6 +1,6 @@
 
 ```markdown
-# Amazon DynamoDB with Fault Tolerance  
+## Amazon DynamoDB with Fault Tolerance  
 Course Project - Distributed Systems
 
 This project implements a distributed key-value store system based on the principles of Amazon DynamoDB with fault tolerance features.
