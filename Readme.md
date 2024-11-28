@@ -151,7 +151,7 @@ You can benchmark the system using the following:
 ## Contact
 
 If you have any questions or need further assistance, feel free to contact us:
-
-- **Bhavya Kothari**: [Email](mailto:bhvyakothari13@gmail.com)
 - **Garima Tripathi**: [Email](mailto:garimatripathi0778@gmail.com)
+- **Bhavya Kothari**: [Email](mailto:bhvyakothari13@gmail.com)
+
 
