@@ -4,8 +4,15 @@ from utils.data_structures import InMemoryStorage, PersistentStorage
 from utils.hashing import ConsistentHashing  # New utility for consistent hashing
 import logging
 import argparse
+from server.health_monitor import MerkleTree
 from concurrent.futures import ThreadPoolExecutor
 from utils.backup import BackupManager
+import os
+
+# Ensure logs directory exists
+log_dir = "logs"
+if not os.path.exists(log_dir):
+    os.makedirs(log_dir)
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
@@ -15,6 +22,11 @@ logging.basicConfig(
         logging.StreamHandler()                 # Logs to console
     ]
 )
+
+# Example log
+logging.info("Logging has been successfully configured.")
+
+hashing_list = None
 
 # Set up a thread pool with a limit on the number of threads
 thread_pool = ThreadPoolExecutor(max_workers=5)
@@ -60,92 +72,6 @@ class TransactionManager:
         return False
 
 class Server:
-    # def __init__(self, host='127.0.0.1', port=5000, replicas=None, node_id=None):
-    #     self.host = host
-    #     self.port = port
-    #     self.node_id = node_id
-    #     self.storage = PersistentStorage(storage_file=f"server_{port}_storage.json")
-    #     # Remove self from replicas list
-    #     if replicas:
-    #         self.replicas = [
-    #             replica for replica in replicas if replica != (self.host, self.port)
-    #         ]
-    #     else:
-    #         self.replicas = []
-    #     # self.replicas = self.validate_replicas(replicas)
-    #     logging.info(f"Validated replicas: {self.replicas}")
-    #     self.consistent_hashing = ConsistentHashing(self.replicas)  # Add self to the hash ring
-    #     self.backup_manager = BackupManager(self.storage)
-    # def handle_client(self, conn, addr):
-    #     try:
-    #         logging.info(f"Connection established with {addr}")
-    #         while True:
-    #             try:
-    #                 data = conn.recv(1024).decode('utf-8').strip()
-    #                 logging.info(f"Raw received data: {data}")
-    #                 if not data:
-    #                     break  # Close the connection if no data is received
-    #                 logging.info(f"Received data: {data} from {addr}")
-                    
-    #                 # Handle HEARTBEAT
-    #                 if data == "HEARTBEAT":
-    #                     conn.sendall("ALIVE".encode('utf-8'))
-    #                     continue
-
-    #                 # Handle TRANSACTION commands (PREPARE, COMMIT, ROLLBACK)
-    #                 if data.startswith("TRANSACTION"):
-    #                     # Split the input and check the format
-    #                     command_parts = data.split(None)
-    #                     if len(command_parts) < 3:
-    #                         logging.error(f"Malformed TRANSACTION command: {data} from {addr}")
-    #                         response = "Error: TRANSACTION command must be in the format 'TRANSACTION <id> PREPARE|COMMIT|ROLLBACK'."
-    #                     else:
-    #                         transaction_id = command_parts[1]
-    #                         if command_parts[2] == "PREPARE":
-    #                             response = self.handle_prepare(transaction_id, command_parts[3:])
-    #                         elif command_parts[2] == "COMMIT":
-    #                             response = self.handle_commit(transaction_id)
-    #                         elif command_parts[2] == "ROLLBACK":
-    #                             response = self.handle_rollback(transaction_id)
-    #                         else:
-    #                             response = "Invalid TRANSACTION command. Use PREPARE, COMMIT, or ROLLBACK."
-    #                 # Handle PUT and GET commands
-    #                 elif data.startswith("PUT"):
-    #                     # Split the input and check length
-    #                     command_parts = data.split(None)
-    #                     if len(command_parts) < 3:
-    #                         logging.error(f"Malformed PUT command: {data} from {addr}")
-    #                         response = "Error: PUT command must be in the format 'PUT <key> <value>'."
-    #                     else:
-    #                         _, key, value = command_parts[:3]
-    #                         # Check if the request is a replication request
-    #                         is_replication = "replication=true" in command_parts
-    #                         response = self.handle_put(key, value, is_replication)
-
-    #                 elif data.startswith("GET"):
-    #                     # Split the input and check length
-    #                     command_parts = data.split(None)
-    #                     if len(command_parts) != 2:
-    #                         logging.error(f"Malformed GET command: {data} from {addr}")
-    #                         response = "Error: GET command must be in the format 'GET <key>'."
-    #                     else:
-    #                         _, key = command_parts
-    #                         response = self.handle_get(key)
-    #                 else:
-    #                     response = "Invalid command. Use PUT <key> <value> or GET <key>."
-                    
-    #                 conn.sendall(response.encode('utf-8'))
-    #             except ConnectionResetError:
-    #                 break
-    #             except Exception as e:
-    #                 logging.error(f"Error processing request from {addr}: {e}")
-    #                 conn.sendall(f"Error: {e}".encode('utf-8'))
-    #     except Exception as e:
-    #         logging.error(f"Error handling client {addr}: {e}")
-    #     finally:
-    #         conn.close()
-
-# class Server:
     def __init__(self, host='127.0.0.1', port=5000, replicas=None, node_id=None, backup_interval=300):
         self.host = host
         self.port = port
@@ -160,7 +86,8 @@ class Server:
             self.replicas = []
         logging.info(f"Validated replicas: {self.replicas}")
         self.consistent_hashing = ConsistentHashing(self.replicas)  # Add self to the hash ring
-        
+        hashing_list = self.consistent_hashing
+        self.merkle_tree = MerkleTree()
         # Initialize BackupManager with a periodic backup interval of 5 minutes (300 seconds)
         self.backup_manager = BackupManager(self.storage)
     
@@ -238,14 +165,19 @@ class Server:
         self.storage.save_data()  # Ensure the data is saved after the operation
         
         response = f"PUT {key}={value} OK"
+        
+        self.merkle_tree.add_leaf(key, value)
+        root_hash = self.merkle_tree.build_tree()
+        # Log the updated root hash
+        logging.info(f"Updated Merkle Tree Root Hash: {root_hash}")
         # Log the PUT operation for replication if necessary
-        if not is_replication:
+        if is_replication:
             self.backup_manager.log_write(f"PUT {key} {value}")
         #     if not is_replication:
         # self.backup_manager.log_write(f"PUT {key} {value}")
         # Replicate the PUT operation to the replicas
             for replica in self.replicas:
-                self.replicate_put(replica, key, value)
+                self.replicate_put(replica, key, value, root_hash)
         return response
 
     def handle_get(self, key):
@@ -255,11 +187,23 @@ class Server:
             return f"Error: Key '{key}' not found."
         return f"GET {key}={value}"
 
-# import socket
-# import threading
-# import logging
+    def integrity_check(self):
+        while True:
+            root_hash = self.merkle_tree.build_tree()
+            for node in self.active_nodes:
+                try:
+                    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                        sock.connect(node)
+                        sock.sendall(f"CHECK_HASH {root_hash}".encode('utf-8'))
+                        response = sock.recv(1024).decode('utf-8')
+                        if response != "MATCH":
+                            logging.warning(f"Hash mismatch with node {node}")
+                            self.resync_with_node(node)
+                except Exception as e:
+                    logging.error(f"Error checking integrity with node {node}: {e}")
+            time.sleep(30)  # Check every 30 seconds
 
-    def replicate_put(self, replica, key, value):
+    def replicate_put(self, replica, key, value, root_hash):
         # Define the replicate task that will be executed by the thread
         def replicate_task(replica, key, value):
             try:
@@ -268,9 +212,13 @@ class Server:
                     # Connect to the replica server
                     replica_socket.connect(replica)
                     
+                    # Send PUT command with root hash for verification
+                    command = f"PUT {key} {value} ROOT_HASH {root_hash}"
+                    replica_socket.sendall(command.encode('utf-8'))
+                    
                     # Format the PUT request with the replication flag
-                    command = f"PUT {key} {value} replication=true"
-                    replica_socket.sendall(command.encode('utf-8'))  # Send the data to the replica
+                    # command = f"PUT {key} {value} replication=true"
+                    # replica_socket.sendall(command.encode('utf-8'))  # Send the data to the replica
                     
                     logging.info(f"Replication success for key '{key}' to replica {replica}")
             except Exception as e:

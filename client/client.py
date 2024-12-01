@@ -39,11 +39,13 @@ replica_clients = [
 
 # PUT operation on the primary server
 key = "key1"
+
 # value = "value1"
 # print(f"Primary PUT Response: {primary_client.put(key, value)}")
 
 # client = Client(host="127.0.0.1", port=5000)
 # replica_client = Client(host="127.0.0.1", port=5001)
+print(primary_client.put("key2", 69))
 print(primary_client.get("key1"))
 # print(client.put("key1", "value1"))
 
