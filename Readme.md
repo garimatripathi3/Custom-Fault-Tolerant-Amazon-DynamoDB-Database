@@ -2,7 +2,6 @@
 
 ![Status](https://img.shields.io/badge/Status-Active-success)
 ![Python](https://img.shields.io/badge/Python-3.x-blue)
-![License](https://img.shields.io/badge/License-MIT-green)
 
 A fault-tolerant distributed key-value store system inspired by Amazon DynamoDB principles. This system provides high availability, resilience against failures, and consistent performance through advanced distributed systems techniques.
 
